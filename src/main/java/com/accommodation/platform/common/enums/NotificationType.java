@@ -1,0 +1,13 @@
+package com.accommodation.platform.common.enums;
+
+public enum NotificationType {
+    BOOKING_CREATED,
+    BOOKING_CONFIRMED,
+    BOOKING_REJECTED,
+    BOOKING_CANCELLED,
+    BOOKING_EXPIRED,
+    PAYMENT_SUCCESS,
+    PAYMENT_FAILED,
+    REFUND_PROCESSED,
+    PROPERTY_VERIFICATION
+}

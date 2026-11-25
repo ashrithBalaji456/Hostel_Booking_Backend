@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: hostel-booking-platform
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hostel_booking}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        default_batch_fetch_size: 20
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: ${PORT:8080}
+
+app:
+  timezone: Asia/Kolkata
+  cors:
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:3000,http://localhost:5173}
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  booking:
+    hold-expiration-minutes: ${BOOKING_HOLD_EXPIRATION_MINUTES:15}
+    owner-approval-expiration-hours: ${BOOKING_APPROVAL_EXPIRATION_HOURS:24}
+    cancellation-free-hours-before-checkin: ${CANCELLATION_FREE_HOURS:24}
+    cancellation-fee-percentage: ${CANCELLATION_FEE_PERCENTAGE:20}
+  payment:
+    provider: ${PAYMENT_PROVIDER:MOCK}
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:mock-webhook-secret}
+    razorpay-key-id: ${RAZORPAY_KEY_ID:}
+    razorpay-key-secret: ${RAZORPAY_KEY_SECRET:}
+  rate-limit:
+    auth-requests-per-minute: ${AUTH_RATE_LIMIT_PER_MIN:20}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method

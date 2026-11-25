@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "Hostel & PG Booking Platform API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "propertyId", "value": "" },
+    { "key": "bedId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Register Customer",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Aarav Sharma\",\n  \"email\": \"aarav@example.com\",\n  \"password\": \"Strong@123\",\n  \"phoneNumber\": \"9876543210\",\n  \"role\": \"CUSTOMER\",\n  \"gender\": \"MALE\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"aarav@example.com\",\n  \"password\": \"Strong@123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Properties - Search",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/properties?city=Bengaluru&availableOnly=true&sortBy=price_asc"
+      }
+    },
+    {
+      "name": "Owner - Create Property",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/owner/properties",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Scholar Nest PG\",\n  \"description\": \"Verified student PG near Metro\",\n  \"propertyType\": \"PG\",\n  \"address\": \"42 100 Feet Road\",\n  \"locality\": \"Koramangala\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\",\n  \"pincode\": \"560034\",\n  \"latitude\": 12.9352,\n  \"longitude\": 77.6245,\n  \"genderPolicy\": \"MALE_ONLY\",\n  \"instantBookingEnabled\": true,\n  \"amenityCodes\": [\"WIFI\", \"FOOD\", \"LOCKER\"],\n  \"pricing\": {\n    \"hourlyRate\": 120.00,\n    \"nightlyRate\": 550.00,\n    \"weeklyRate\": 3200.00,\n    \"monthlyRate\": 9500.00,\n    \"securityDeposit\": 3000.00,\n    \"extraCharges\": 0.00,\n    \"discountPercentage\": 5.00\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Bookings - Create Booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/bookings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propertyId\": \"{{propertyId}}\",\n  \"bedId\": \"{{bedId}}\",\n  \"checkIn\": \"2026-12-10T10:00:00Z\",\n  \"checkOut\": \"2026-12-10T16:00:00Z\",\n  \"stayType\": \"SHORT_STAY\",\n  \"guestName\": \"Aarav Sharma\",\n  \"guestPhone\": \"9876543210\",\n  \"requestOwnerApproval\": false\n}"
+        }
+      }
+    },
+    {
+      "name": "Payments - Initiate",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Idempotency-Key", "value": "pay-req-001" }
+        ],
+        "url": "{{baseUrl}}/api/v1/payments/initiate",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"paymentMethod\": \"UPI\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Payments - Verify",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/payments/{{paymentId}}/verify",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"providerTransactionId\": \"txn_mock_success_001\",\n  \"simulateFailure\": false\n}"
+        }
+      }
+    }
+  ]
+}
