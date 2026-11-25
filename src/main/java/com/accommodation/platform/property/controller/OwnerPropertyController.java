@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -39,6 +40,12 @@ public class OwnerPropertyController {
         this.propertyService = propertyService;
         this.roomService = roomService;
         this.bedService = bedService;
+    }
+
+    @GetMapping
+    @Operation(summary = "List all properties owned by the current owner")
+    public ResponseEntity<ApiResponse<List<PropertyDetailResponse>>> listMyProperties() {
+        return ResponseEntity.ok(ApiResponse.ok("Owner properties loaded", propertyService.getOwnerProperties(SecurityUtils.getCurrentUserId())));
     }
 
     @PostMapping

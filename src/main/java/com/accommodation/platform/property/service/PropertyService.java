@@ -178,6 +178,13 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
+    public List<PropertyDetailResponse> getOwnerProperties(UUID ownerId) {
+        return propertyRepository.findByOwnerId(ownerId).stream()
+                .map(p -> getPropertyDetails(p.getId(), true))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public PropertyDetailResponse getPropertyDetails(UUID propertyId, boolean includeUnapproved) {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Property not found", "PROPERTY_NOT_FOUND"));
