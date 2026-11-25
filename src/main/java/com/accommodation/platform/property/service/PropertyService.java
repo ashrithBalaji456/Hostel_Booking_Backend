@@ -3,6 +3,7 @@ package com.accommodation.platform.property.service;
 import com.accommodation.platform.common.enums.ListingStatus;
 import com.accommodation.platform.common.enums.VerificationStatus;
 import com.accommodation.platform.common.exception.BadRequestException;
+import com.accommodation.platform.common.exception.ConflictException;
 import com.accommodation.platform.common.exception.ResourceNotFoundException;
 import com.accommodation.platform.property.dto.PropertyDtos.*;
 import com.accommodation.platform.property.entity.Amenity;
@@ -62,6 +63,10 @@ public class PropertyService {
     public PropertyDetailResponse createProperty(UUID ownerId, CreatePropertyRequest req) {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner not found", "USER_NOT_FOUND"));
+
+        if (propertyRepository.existsByOwnerIdAndNameIgnoreCaseAndPincode(ownerId, req.name().trim(), req.pincode().trim())) {
+            throw new ConflictException("A property with this name and pincode already exists", "DUPLICATE_PROPERTY");
+        }
 
         Property property = new Property();
         property.setOwner(owner);

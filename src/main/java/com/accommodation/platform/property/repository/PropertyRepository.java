@@ -20,4 +20,5 @@ public interface PropertyRepository extends JpaRepository<Property, UUID>, JpaSp
     Page<Property> findByVerificationStatusAndListingStatus(VerificationStatus v, ListingStatus l, Pageable pageable);
     long countByVerificationStatus(VerificationStatus verificationStatus);
     long countByOwnerId(UUID ownerId);
+    boolean existsByOwnerIdAndNameIgnoreCaseAndPincode(UUID ownerId, String name, String pincode);
 }
