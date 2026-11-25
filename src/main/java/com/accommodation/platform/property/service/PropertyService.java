@@ -1,5 +1,6 @@
 package com.accommodation.platform.property.service;
 
+import com.accommodation.platform.booking.repository.BookingRepository;
 import com.accommodation.platform.common.enums.ListingStatus;
 import com.accommodation.platform.common.enums.VerificationStatus;
 import com.accommodation.platform.common.exception.BadRequestException;
@@ -40,6 +41,7 @@ public class PropertyService {
     private final UserRepository userRepository;
     private final RoomService roomService;
     private final ReviewRepository reviewRepository;
+    private final BookingRepository bookingRepository;
 
     public PropertyService(
             PropertyRepository propertyRepository,
@@ -48,7 +50,8 @@ public class PropertyService {
             AmenityRepository amenityRepository,
             UserRepository userRepository,
             RoomService roomService,
-            ReviewRepository reviewRepository
+            ReviewRepository reviewRepository,
+            BookingRepository bookingRepository
     ) {
         this.propertyRepository = propertyRepository;
         this.pricingRepository = pricingRepository;
@@ -57,6 +60,7 @@ public class PropertyService {
         this.userRepository = userRepository;
         this.roomService = roomService;
         this.reviewRepository = reviewRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional
@@ -187,6 +191,16 @@ public class PropertyService {
         return propertyRepository.findByOwnerId(ownerId).stream()
                 .map(p -> getPropertyDetails(p.getId(), true))
                 .toList();
+    }
+
+    @Transactional
+    public void deleteProperty(UUID ownerId, UUID propertyId) {
+        Property property = propertyRepository.findByIdAndOwnerId(propertyId, ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Property not found or not owned by you", "PROPERTY_NOT_FOUND"));
+        if (bookingRepository.existsByPropertyId(propertyId)) {
+            throw new ConflictException("Cannot delete a property that has existing bookings", "PROPERTY_HAS_BOOKINGS");
+        }
+        propertyRepository.delete(property);
     }
 
     @Transactional(readOnly = true)

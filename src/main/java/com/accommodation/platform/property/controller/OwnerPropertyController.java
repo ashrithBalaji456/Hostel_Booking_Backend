@@ -68,6 +68,13 @@ public class OwnerPropertyController {
         return ResponseEntity.ok(ApiResponse.ok("Property updated successfully", response));
     }
 
+    @DeleteMapping("/{propertyId}")
+    @Operation(summary = "Delete an owned property listing")
+    public ResponseEntity<ApiResponse<Void>> deleteProperty(@PathVariable UUID propertyId) {
+        propertyService.deleteProperty(SecurityUtils.getCurrentUserId(), propertyId);
+        return ResponseEntity.ok(ApiResponse.ok("Property deleted successfully", null));
+    }
+
     @PostMapping("/{propertyId}/rooms")
     @Operation(summary = "Add a room (and optionally beds) to an owned property")
     public ResponseEntity<ApiResponse<RoomResponse>> addRoom(

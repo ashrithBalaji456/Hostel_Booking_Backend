@@ -15,6 +15,8 @@ import java.util.UUID;
 
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
+    boolean existsByPropertyId(UUID propertyId);
+
     @Query("""
             SELECT COUNT(b) > 0 FROM Booking b
             WHERE b.bed.id = :bedId
