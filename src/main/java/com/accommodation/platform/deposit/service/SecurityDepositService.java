@@ -2,6 +2,7 @@ package com.accommodation.platform.deposit.service;
 
 import com.accommodation.platform.booking.entity.Booking;
 import com.accommodation.platform.booking.repository.BookingRepository;
+import com.accommodation.platform.common.enums.BookingStatus;
 import com.accommodation.platform.common.exception.BadRequestException;
 import com.accommodation.platform.common.exception.ForbiddenException;
 import com.accommodation.platform.common.exception.ResourceNotFoundException;
@@ -57,7 +58,13 @@ public class SecurityDepositService {
         if (!booking.getProperty().getOwner().getId().equals(ownerId)) {
             throw new ForbiddenException("You do not own this property");
         }
+        if (booking.getBookingStatus() != BookingStatus.COMPLETED) {
+            throw new BadRequestException("Security deposit can only be settled after the guest completes their stay", "STAY_NOT_COMPLETED");
+        }
         SecurityDeposit d = createOrGetDeposit(bookingId);
+        if ("REFUNDED".equals(d.getStatus()) || "PARTIALLY_REFUNDED".equals(d.getStatus())) {
+            throw new BadRequestException("Deposit has already been settled", "ALREADY_SETTLED");
+        }
         BigDecimal ded = deduction != null ? deduction : BigDecimal.ZERO;
         if (ded.compareTo(BigDecimal.ZERO) < 0 || ded.compareTo(d.getDepositAmount()) > 0) {
             throw new BadRequestException("Invalid deduction amount", "INVALID_DEDUCTION");

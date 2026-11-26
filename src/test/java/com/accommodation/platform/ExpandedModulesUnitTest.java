@@ -101,6 +101,7 @@ class ExpandedModulesUnitTest {
         property.setOwner(owner);
         Booking booking = new Booking();
         booking.setProperty(property);
+        booking.setBookingStatus(com.accommodation.platform.common.enums.BookingStatus.COMPLETED);
 
         SecurityDeposit deposit = new SecurityDeposit();
         deposit.setBookingId(bookingId);
