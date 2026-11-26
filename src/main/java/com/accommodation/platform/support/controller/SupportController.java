@@ -7,6 +7,7 @@ import com.accommodation.platform.security.UserPrincipal;
 import com.accommodation.platform.support.entity.SupportMessage;
 import com.accommodation.platform.support.entity.SupportTicket;
 import com.accommodation.platform.support.service.SupportService;
+import com.accommodation.platform.support.service.SupportService.AdminSupportTicketResponse;
 import com.accommodation.platform.support.service.SupportService.CreateTicketRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,7 +70,7 @@ public class SupportController {
 
     @GetMapping("/admin/support/tickets")
     @Operation(summary = "List all support tickets (admin)")
-    public ResponseEntity<ApiResponse<PagedResponse<SupportTicket>>> adminListTickets(
+    public ResponseEntity<ApiResponse<PagedResponse<AdminSupportTicketResponse>>> adminListTickets(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size

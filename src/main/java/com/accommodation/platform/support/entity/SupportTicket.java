@@ -73,4 +73,5 @@ public class SupportTicket {
     public String getResolution() { return resolution; }
     public void setResolution(String resolution) { this.resolution = resolution; }
     public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 }

@@ -1,5 +1,7 @@
 package com.accommodation.platform.support.service;
 
+import com.accommodation.platform.booking.entity.Booking;
+import com.accommodation.platform.booking.repository.BookingRepository;
 import com.accommodation.platform.common.enums.UserRole;
 import com.accommodation.platform.common.exception.ForbiddenException;
 import com.accommodation.platform.common.exception.ResourceNotFoundException;
@@ -8,11 +10,15 @@ import com.accommodation.platform.support.entity.SupportMessage;
 import com.accommodation.platform.support.entity.SupportTicket;
 import com.accommodation.platform.support.repository.SupportMessageRepository;
 import com.accommodation.platform.support.repository.SupportTicketRepository;
+import com.accommodation.platform.user.entity.User;
+import com.accommodation.platform.user.repository.UserRepository;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,10 +27,19 @@ public class SupportService {
 
     private final SupportTicketRepository ticketRepo;
     private final SupportMessageRepository messageRepo;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
-    public SupportService(SupportTicketRepository ticketRepo, SupportMessageRepository messageRepo) {
+    public SupportService(
+            SupportTicketRepository ticketRepo,
+            SupportMessageRepository messageRepo,
+            UserRepository userRepository,
+            BookingRepository bookingRepository
+    ) {
         this.ticketRepo = ticketRepo;
         this.messageRepo = messageRepo;
+        this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional
@@ -78,12 +93,64 @@ public class SupportService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<SupportTicket> listAllTickets(String status, int page, int size) {
-        var pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 50));
-        return PagedResponse.from(status != null
-                ? ticketRepo.findByStatusOrderByCreatedAtDesc(status.toUpperCase(), pageable)
-                : ticketRepo.findAll(pageable));
+    public PagedResponse<AdminSupportTicketResponse> listAllTickets(String status, int page, int size) {
+        var pageable = PageRequest.of(
+                Math.max(0, page),
+                Math.min(Math.max(1, size), 50),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        var pageRes = (status != null && !status.isBlank())
+                ? ticketRepo.findByStatusOrderByCreatedAtDesc(status.trim().toUpperCase(), pageable)
+                : ticketRepo.findAll(pageable);
+        return PagedResponse.from(pageRes.map(this::toAdminResponse));
     }
+
+    private AdminSupportTicketResponse toAdminResponse(SupportTicket t) {
+        User user = userRepository.findById(t.getUserId()).orElse(null);
+        Booking booking = t.getBookingId() != null ? bookingRepository.findById(t.getBookingId()).orElse(null) : null;
+        List<SupportMessage> msgs = messageRepo.findByTicketIdOrderByCreatedAtAsc(t.getId());
+        String initialMsg = msgs.isEmpty() ? null : msgs.get(0).getMessage();
+
+        return new AdminSupportTicketResponse(
+                t.getId(),
+                t.getTicketReference(),
+                t.getUserId(),
+                user != null ? user.getFullName() : "Unknown User",
+                user != null ? user.getEmail() : null,
+                user != null ? user.getPhoneNumber() : null,
+                user != null && user.getRole() != null ? user.getRole().name() : null,
+                t.getBookingId(),
+                booking != null ? booking.getBookingReference() : null,
+                booking != null && booking.getProperty() != null ? booking.getProperty().getName() : null,
+                t.getCategory(),
+                t.getSubject(),
+                initialMsg,
+                t.getStatus(),
+                t.getResolution(),
+                t.getCreatedAt(),
+                t.getUpdatedAt()
+        );
+    }
+
+    public record AdminSupportTicketResponse(
+            UUID id,
+            String ticketReference,
+            UUID userId,
+            String userName,
+            String userEmail,
+            String userPhone,
+            String userRole,
+            UUID bookingId,
+            String bookingReference,
+            String propertyName,
+            String category,
+            String subject,
+            String initialMessage,
+            String status,
+            String resolution,
+            Instant createdAt,
+            Instant updatedAt
+    ) {}
 
     @Transactional(readOnly = true)
     public List<SupportMessage> getMessages(UUID actorId, UserRole role, UUID ticketId) {
