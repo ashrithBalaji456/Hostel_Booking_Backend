@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -73,6 +74,65 @@ public class CouponService {
         return PagedResponse.from(
                 couponRepository.findAll(PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 50)))
                         .map(this::toResponse)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<CouponResponse> listActiveCoupons(UUID propertyId) {
+        Instant now = Instant.now();
+        return couponRepository.findAll().stream()
+                .filter(c -> c.isActive()
+                        && !now.isBefore(c.getValidFrom())
+                        && !now.isAfter(c.getValidUntil())
+                        && (c.getUsageLimit() == null || c.getUsedCount() < c.getUsageLimit())
+                        && (c.getPropertyId() == null || c.getPropertyId().equals(propertyId)))
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CouponPreviewResponse previewCouponDiscount(
+            String code, UUID propertyId, StayType stayType, BigDecimal baseAmount
+    ) {
+        Coupon c = couponRepository.findByCodeIgnoreCase(code.trim())
+                .orElseThrow(() -> new BadRequestException("Invalid coupon code", "INVALID_COUPON"));
+
+        Instant now = Instant.now();
+        if (!c.isActive() || now.isBefore(c.getValidFrom()) || now.isAfter(c.getValidUntil())) {
+            throw new BadRequestException("Coupon is inactive or expired", "COUPON_EXPIRED");
+        }
+        if (c.getUsageLimit() != null && c.getUsedCount() >= c.getUsageLimit()) {
+            throw new BadRequestException("Coupon usage limit reached", "COUPON_LIMIT_REACHED");
+        }
+        if (c.getPropertyId() != null && !c.getPropertyId().equals(propertyId)) {
+            throw new BadRequestException("Coupon is not valid for this property", "COUPON_PROPERTY_MISMATCH");
+        }
+        if (c.getStayType() != null && c.getStayType() != stayType) {
+            throw new BadRequestException("Coupon is not valid for this stay type", "COUPON_STAY_TYPE_MISMATCH");
+        }
+        if (baseAmount.compareTo(c.getMinBookingAmount()) < 0) {
+            throw new BadRequestException(
+                    "Minimum stay amount for this coupon is ₹" + c.getMinBookingAmount(),
+                    "COUPON_MIN_AMOUNT"
+            );
+        }
+
+        BigDecimal discount = "PERCENTAGE".equalsIgnoreCase(c.getDiscountType())
+                ? baseAmount.multiply(c.getDiscountValue()).divide(HUNDRED, 2, RoundingMode.HALF_UP)
+                : c.getDiscountValue().setScale(2, RoundingMode.HALF_UP);
+
+        if (c.getMaxDiscountAmount() != null && discount.compareTo(c.getMaxDiscountAmount()) > 0) {
+            discount = c.getMaxDiscountAmount().setScale(2, RoundingMode.HALF_UP);
+        }
+        discount = discount.min(baseAmount);
+
+        return new CouponPreviewResponse(
+                c.getCode(),
+                c.getDiscountType(),
+                c.getDiscountValue(),
+                discount,
+                c.getMinBookingAmount(),
+                c.getMaxDiscountAmount()
         );
     }
 
@@ -169,5 +229,14 @@ public class CouponService {
             UUID propertyId,
             StayType stayType,
             boolean active
+    ) {}
+
+    public record CouponPreviewResponse(
+            String code,
+            String discountType,
+            BigDecimal discountValue,
+            BigDecimal discountAmount,
+            BigDecimal minBookingAmount,
+            BigDecimal maxDiscountAmount
     ) {}
 }
