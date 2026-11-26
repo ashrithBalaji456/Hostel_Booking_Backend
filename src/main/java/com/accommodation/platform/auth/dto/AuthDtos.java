@@ -37,8 +37,15 @@ public final class AuthDtos {
             @NotNull(message = "Role is required")
             UserRole role,
 
-            Gender gender
-    ) {}
+            Gender gender,
+            @Size(max = 40) String occupationType,
+            @Size(max = 200) String organizationName,
+            @Size(max = 150) String courseOrRole
+    ) {
+        public RegisterRequest(String fullName, String email, String password, String phoneNumber, UserRole role, Gender gender) {
+            this(fullName, email, password, phoneNumber, role, gender, null, null, null);
+        }
+    }
 
     public record LoginRequest(
             @NotBlank(message = "Email is required")

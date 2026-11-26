@@ -73,6 +73,9 @@ public class AuthService {
         user.setPhoneNumber(request.phoneNumber().trim());
         user.setRole(request.role());
         user.setGender(request.gender());
+        if (request.occupationType() != null) user.setOccupationType(request.occupationType().trim());
+        if (request.organizationName() != null) user.setOrganizationName(request.organizationName().trim());
+        if (request.courseOrRole() != null) user.setCourseOrRole(request.courseOrRole().trim());
         user.setEmailVerified(false);
         user.setAccountStatus(AccountStatus.ACTIVE);
         user = userRepository.save(user);

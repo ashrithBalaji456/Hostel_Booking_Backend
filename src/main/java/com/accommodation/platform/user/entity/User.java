@@ -44,8 +44,17 @@ public class User {
     @Column(length = 20)
     private Gender gender;
 
-    @Column(name = "profile_image", length = 500)
+    @Column(name = "profile_image", columnDefinition = "TEXT")
     private String profileImage;
+
+    @Column(name = "occupation_type", length = 40)
+    private String occupationType;
+
+    @Column(name = "organization_name", length = 200)
+    private String organizationName;
+
+    @Column(name = "course_or_role", length = 150)
+    private String courseOrRole;
 
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
@@ -95,6 +104,12 @@ public class User {
     public void setGender(Gender gender) { this.gender = gender; }
     public String getProfileImage() { return profileImage; }
     public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
+    public String getOccupationType() { return occupationType; }
+    public void setOccupationType(String occupationType) { this.occupationType = occupationType; }
+    public String getOrganizationName() { return organizationName; }
+    public void setOrganizationName(String organizationName) { this.organizationName = organizationName; }
+    public String getCourseOrRole() { return courseOrRole; }
+    public void setCourseOrRole(String courseOrRole) { this.courseOrRole = courseOrRole; }
     public boolean isEmailVerified() { return emailVerified; }
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
     public AccountStatus getAccountStatus() { return accountStatus; }

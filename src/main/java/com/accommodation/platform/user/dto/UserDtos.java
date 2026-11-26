@@ -22,6 +22,9 @@ public final class UserDtos {
             UserRole role,
             Gender gender,
             String profileImage,
+            String occupationType,
+            String organizationName,
+            String courseOrRole,
             boolean emailVerified,
             AccountStatus accountStatus,
             Instant createdAt
@@ -38,7 +41,9 @@ public final class UserDtos {
 
             Gender gender,
 
-            @Size(max = 500)
-            String profileImage
+            String profileImage,
+            @Size(max = 40) String occupationType,
+            @Size(max = 200) String organizationName,
+            @Size(max = 150) String courseOrRole
     ) {}
 }

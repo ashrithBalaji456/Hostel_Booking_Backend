@@ -24,12 +24,26 @@ public final class AvailabilityDtos {
             BigDecimal monthlyRate
     ) {}
 
+    public record OccupiedBedInfo(
+            UUID bedId,
+            UUID roomId,
+            String roomNumber,
+            String bedNumber,
+            String bookingStatus,
+            String occupantName,
+            String occupantAvatar,
+            String occupationType,
+            String organizationName,
+            String courseOrRole
+    ) {}
+
     public record PropertyAvailabilityResponse(
             UUID propertyId,
             Instant checkIn,
             Instant checkOut,
             int totalBeds,
             int availableBedsCount,
-            List<AvailableBedInfo> availableBeds
+            List<AvailableBedInfo> availableBeds,
+            List<OccupiedBedInfo> occupiedBeds
     ) {}
 }

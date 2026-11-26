@@ -32,6 +32,9 @@ public class UserService {
         user.setPhoneNumber(request.phoneNumber().trim());
         user.setGender(request.gender());
         user.setProfileImage(request.profileImage());
+        if (request.occupationType() != null) user.setOccupationType(request.occupationType().trim());
+        if (request.organizationName() != null) user.setOrganizationName(request.organizationName().trim());
+        if (request.courseOrRole() != null) user.setCourseOrRole(request.courseOrRole().trim());
         return toResponse(userRepository.save(user));
     }
 
@@ -50,6 +53,9 @@ public class UserService {
                 user.getRole(),
                 user.getGender(),
                 user.getProfileImage(),
+                user.getOccupationType(),
+                user.getOrganizationName(),
+                user.getCourseOrRole(),
                 user.isEmailVerified(),
                 user.getAccountStatus(),
                 user.getCreatedAt()

@@ -1,6 +1,7 @@
 package com.accommodation.platform.availability.service;
 
 import com.accommodation.platform.availability.dto.AvailabilityDtos.AvailableBedInfo;
+import com.accommodation.platform.availability.dto.AvailabilityDtos.OccupiedBedInfo;
 import com.accommodation.platform.availability.dto.AvailabilityDtos.PropertyAvailabilityResponse;
 import com.accommodation.platform.availability.repository.AvailabilityBlockRepository;
 import com.accommodation.platform.bed.entity.Bed;
@@ -53,14 +54,33 @@ public class AvailabilityService {
 
         if (property.getVerificationStatus() != VerificationStatus.APPROVED
                 || property.getListingStatus() != ListingStatus.ACTIVE) {
-            return new PropertyAvailabilityResponse(propertyId, checkIn, checkOut, 0, 0, List.of());
+            return new PropertyAvailabilityResponse(propertyId, checkIn, checkOut, 0, 0, List.of(), List.of());
         }
 
         List<Bed> allBeds = bedRepository.findByRoomPropertyId(propertyId);
-        Set<UUID> bookedBedIds = bookingRepository.findOverlappingBedIdsForProperty(
-                propertyId, checkIn, checkOut, Instant.now()
-        );
+        Instant now = Instant.now();
+        var overlappingBookings = bookingRepository.findOverlappingBookingsForProperty(propertyId, checkIn, checkOut, now);
+        Set<UUID> bookedBedIds = overlappingBookings.stream().map(b -> b.getBed().getId()).collect(java.util.stream.Collectors.toSet());
         Set<UUID> blockedBedIds = blockRepository.findBlockedBedIdsForProperty(propertyId, checkIn, checkOut);
+
+        List<OccupiedBedInfo> occupiedBeds = overlappingBookings.stream()
+                .map(b -> {
+                    var u = b.getUser();
+                    String firstName = u.getFullName() != null ? u.getFullName().split("\\s+")[0] : "Guest";
+                    return new OccupiedBedInfo(
+                            b.getBed().getId(),
+                            b.getBed().getRoom().getId(),
+                            b.getBed().getRoom().getRoomNumber(),
+                            b.getBed().getBedNumber(),
+                            b.getBookingStatus().name(),
+                            firstName,
+                            u.getProfileImage(),
+                            u.getOccupationType(),
+                            u.getOrganizationName(),
+                            u.getCourseOrRole()
+                    );
+                })
+                .toList();
 
         PropertyPricing propPricing = property.getPricing();
 
@@ -91,7 +111,8 @@ public class AvailabilityService {
                 checkOut,
                 allBeds.size(),
                 availableBeds.size(),
-                availableBeds
+                availableBeds,
+                occupiedBeds
         );
     }
 

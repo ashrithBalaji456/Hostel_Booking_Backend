@@ -49,6 +49,24 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("""
             SELECT b FROM Booking b
+            JOIN FETCH b.user u
+            JOIN FETCH b.bed bd
+            JOIN FETCH bd.room r
+            WHERE b.property.id = :propertyId
+              AND b.checkIn < :checkOut
+              AND b.checkOut > :checkIn
+              AND (b.bookingStatus = 'CONFIRMED'
+                   OR (b.bookingStatus = 'PENDING' AND (b.expiresAt IS NULL OR b.expiresAt > :now)))
+            """)
+    List<Booking> findOverlappingBookingsForProperty(
+            @Param("propertyId") UUID propertyId,
+            @Param("checkIn") Instant checkIn,
+            @Param("checkOut") Instant checkOut,
+            @Param("now") Instant now
+    );
+
+    @Query("""
+            SELECT b FROM Booking b
             WHERE b.bookingStatus = 'PENDING'
               AND b.expiresAt IS NOT NULL
               AND b.expiresAt < :now
