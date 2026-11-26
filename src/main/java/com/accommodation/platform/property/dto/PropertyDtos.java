@@ -243,6 +243,7 @@ public final class PropertyDtos {
             Double averageRating,
             long reviewCount,
             String mainImage,
+            List<String> imageUrls,
             List<StayType> availableStayTypes
     ) {}
 }

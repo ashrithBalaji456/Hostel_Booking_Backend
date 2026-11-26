@@ -175,11 +175,11 @@ public class PropertySearchService {
                 continue;
             }
 
-            String mainImage = imageRepository.findByPropertyIdOrderByDisplayOrderAsc(p.getId())
+            List<String> imageUrls = imageRepository.findByPropertyIdOrderByDisplayOrderAsc(p.getId())
                     .stream()
-                    .findFirst()
                     .map(PropertyImage::getImageUrl)
-                    .orElse(null);
+                    .toList();
+            String mainImage = imageUrls.isEmpty() ? null : imageUrls.get(0);
 
             BigDecimal startingPrice = determineStartingPrice(pricing, stayType);
 
@@ -201,6 +201,7 @@ public class PropertySearchService {
                     avgRating,
                     reviewCount,
                     mainImage,
+                    imageUrls,
                     stayTypes
             ));
         }

@@ -96,12 +96,7 @@ public class PropertyService {
         if (req.maxLongStayMonths() != null) property.setMaxLongStayMonths(req.maxLongStayMonths());
 
         if (req.amenityCodes() != null && !req.amenityCodes().isEmpty()) {
-            Set<String> upper = req.amenityCodes().stream().map(String::toUpperCase).collect(Collectors.toSet());
-            List<Amenity> found = amenityRepository.findByCodeIn(upper);
-            if (found.size() != upper.size()) {
-                throw new BadRequestException("One or more amenity codes are invalid", "INVALID_AMENITY");
-            }
-            property.setAmenities(new HashSet<>(found));
+            property.setAmenities(resolveOrCreateAmenities(req.amenityCodes()));
         }
 
         property = propertyRepository.save(property);
@@ -154,8 +149,7 @@ public class PropertyService {
         }
 
         if (req.amenityCodes() != null) {
-            Set<String> upper = req.amenityCodes().stream().map(String::toUpperCase).collect(Collectors.toSet());
-            property.setAmenities(new HashSet<>(amenityRepository.findByCodeIn(upper)));
+            property.setAmenities(resolveOrCreateAmenities(req.amenityCodes()));
         }
 
         if (req.pricing() != null) {
@@ -184,6 +178,41 @@ public class PropertyService {
 
         propertyRepository.save(property);
         return getPropertyDetails(propertyId, true);
+    }
+
+    private Set<Amenity> resolveOrCreateAmenities(Set<String> rawCodes) {
+        if (rawCodes == null || rawCodes.isEmpty()) {
+            return new HashSet<>();
+        }
+        Set<String> normalized = rawCodes.stream()
+                .filter(c -> c != null && !c.isBlank())
+                .map(c -> c.trim().toUpperCase().replaceAll("[^A-Z0-9]+", "_").replaceAll("^_+|_+$", ""))
+                .filter(c -> !c.isEmpty())
+                .map(c -> c.length() > 50 ? c.substring(0, 50) : c)
+                .collect(Collectors.toSet());
+
+        if (normalized.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        List<Amenity> existing = amenityRepository.findByCodeIn(normalized);
+        Set<String> existingCodes = existing.stream().map(Amenity::getCode).collect(Collectors.toSet());
+        Set<Amenity> result = new HashSet<>(existing);
+
+        for (String code : normalized) {
+            if (!existingCodes.contains(code)) {
+                Amenity created = new Amenity();
+                created.setId(UUID.randomUUID());
+                created.setCode(code);
+                String label = java.util.Arrays.stream(code.split("_"))
+                        .filter(w -> !w.isEmpty())
+                        .map(w -> w.substring(0, 1) + w.substring(1).toLowerCase())
+                        .collect(Collectors.joining(" "));
+                created.setName(label.length() > 100 ? label.substring(0, 100) : label);
+                result.add(amenityRepository.save(created));
+            }
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
