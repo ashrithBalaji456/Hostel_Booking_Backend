@@ -140,6 +140,16 @@ public class ChatAndHostelTicketService {
     }
 
     @Transactional
+    public void deleteMessage(UUID actorId, UUID messageId) {
+        ChatMessage msg = messageRepo.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found", "MESSAGE_NOT_FOUND"));
+        if (!msg.getSenderId().equals(actorId)) {
+            throw new ForbiddenException("You can only delete your own messages");
+        }
+        messageRepo.delete(msg);
+    }
+
+    @Transactional
     public HostelTicketResponse createHostelTicket(UUID customerId, CreateHostelTicketRequest req) {
         Property property = propertyRepo.findById(req.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property not found", "PROPERTY_NOT_FOUND"));

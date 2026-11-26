@@ -69,6 +69,13 @@ public class ChatAndHostelTicketController {
                 ));
     }
 
+    @DeleteMapping("/chat/messages/{messageId}")
+    @Operation(summary = "Delete a chat message sent by current user")
+    public ResponseEntity<ApiResponse<Void>> deleteMessage(@PathVariable UUID messageId) {
+        service.deleteMessage(SecurityUtils.getCurrentUserId(), messageId);
+        return ResponseEntity.ok(ApiResponse.ok("Message deleted", null));
+    }
+
     @PostMapping("/hostel-tickets")
     @Operation(summary = "Customer raises a hostel/hotel issue ticket to owner (supports anonymous)")
     public ResponseEntity<ApiResponse<HostelTicketResponse>> createHostelTicket(
