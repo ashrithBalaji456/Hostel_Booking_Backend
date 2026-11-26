@@ -52,7 +52,11 @@ public class RentService {
 
         long days = Math.max(1, ChronoUnit.DAYS.between(booking.getCheckIn(), booking.getCheckOut()));
         int months = Math.max(1, (int) Math.ceil(days / 30.0));
-        BigDecimal monthlyAmount = booking.getBaseAmount()
+        BigDecimal netRent = booking.getBaseAmount()
+                .subtract(booking.getDiscountAmount())
+                .add(booking.getExtraCharges())
+                .max(BigDecimal.ZERO);
+        BigDecimal monthlyAmount = netRent
                 .divide(BigDecimal.valueOf(months), 2, java.math.RoundingMode.HALF_UP);
 
         List<RentSchedule> created = new ArrayList<>();
@@ -66,7 +70,84 @@ public class RentService {
             rs.setStatus("PENDING");
             created.add(scheduleRepo.save(rs));
         }
+        syncScheduleWithBookingPayments(booking, created);
         return created;
+    }
+
+    @Transactional
+    public void syncScheduleWithBookingPayments(Booking booking) {
+        if (booking.getStayType() != StayType.LONG_STAY) {
+            return;
+        }
+        List<RentSchedule> schedules = scheduleRepo.findByBookingIdOrderByInstallmentNumberAsc(booking.getId());
+        if (!schedules.isEmpty()) {
+            syncScheduleWithBookingPayments(booking, schedules);
+        }
+    }
+
+    private void syncScheduleWithBookingPayments(Booking booking, List<RentSchedule> schedules) {
+        BigDecimal netRentPaid = booking.getAmountPaid()
+                .subtract(booking.getDepositAmount())
+                .max(BigDecimal.ZERO);
+        BigDecimal alreadyAllocated = schedules.stream()
+                .map(RentSchedule::getAmountPaid)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal toAllocate = netRentPaid.subtract(alreadyAllocated);
+        if (toAllocate.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        for (RentSchedule rs : schedules) {
+            if (toAllocate.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+            BigDecimal dueLeft = rs.getAmountDue().subtract(rs.getAmountPaid());
+            if (dueLeft.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal alloc = dueLeft.min(toAllocate);
+                rs.setAmountPaid(rs.getAmountPaid().add(alloc));
+                rs.setStatus(rs.getAmountPaid().compareTo(rs.getAmountDue()) >= 0 ? "PAID" : "PARTIALLY_PAID");
+                scheduleRepo.save(rs);
+                toAllocate = toAllocate.subtract(alloc);
+            }
+        }
+    }
+
+    @Transactional
+    public void syncScheduleForExtension(Booking booking) {
+        if (booking.getStayType() != StayType.LONG_STAY) {
+            return;
+        }
+        List<RentSchedule> existing = scheduleRepo.findByBookingIdOrderByInstallmentNumberAsc(booking.getId());
+        if (existing.isEmpty()) {
+            return;
+        }
+        BigDecimal totalNetRent = booking.getBaseAmount()
+                .subtract(booking.getDiscountAmount())
+                .add(booking.getExtraCharges())
+                .max(BigDecimal.ZERO);
+        BigDecimal totalScheduled = existing.stream()
+                .map(RentSchedule::getAmountDue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal additionalRent = totalNetRent.subtract(totalScheduled);
+        if (additionalRent.compareTo(BigDecimal.ZERO) <= 0) {
+            syncScheduleWithBookingPayments(booking, existing);
+            return;
+        }
+        long days = Math.max(1, ChronoUnit.DAYS.between(booking.getCheckIn(), booking.getCheckOut()));
+        int targetMonths = Math.max(existing.size(), (int) Math.ceil(days / 30.0));
+        int newInstallments = Math.max(1, targetMonths - existing.size());
+        BigDecimal perInstallment = additionalRent.divide(BigDecimal.valueOf(newInstallments), 2, java.math.RoundingMode.HALF_UP);
+        var startDate = booking.getCheckIn().atZone(ZoneOffset.UTC).toLocalDate();
+        int nextNum = existing.size() + 1;
+        for (int i = 0; i < newInstallments; i++) {
+            RentSchedule rs = new RentSchedule();
+            rs.setBookingId(booking.getId());
+            rs.setInstallmentNumber(nextNum + i);
+            rs.setDueDate(startDate.plusMonths((nextNum + i) - 1L));
+            rs.setAmountDue(perInstallment);
+            rs.setStatus("PENDING");
+            existing.add(scheduleRepo.save(rs));
+        }
+        syncScheduleWithBookingPayments(booking, existing);
     }
 
     @Transactional
@@ -97,11 +178,15 @@ public class RentService {
         schedule.setStatus(schedule.getAmountPaid().compareTo(schedule.getAmountDue()) >= 0 ? "PAID" : "PARTIALLY_PAID");
         scheduleRepo.save(schedule);
 
+        booking.setAmountPaid(booking.getAmountPaid().add(amount));
+        bookingRepository.save(booking);
+
         return rp;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<RentSchedule> getSchedule(UUID bookingId) {
+        bookingRepository.findById(bookingId).ifPresent(this::syncScheduleWithBookingPayments);
         return scheduleRepo.findByBookingIdOrderByInstallmentNumberAsc(bookingId);
     }
 }

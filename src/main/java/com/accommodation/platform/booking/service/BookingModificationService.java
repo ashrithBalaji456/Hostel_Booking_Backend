@@ -19,6 +19,7 @@ import com.accommodation.platform.common.exception.ConflictException;
 import com.accommodation.platform.common.exception.ForbiddenException;
 import com.accommodation.platform.common.exception.ResourceNotFoundException;
 import com.accommodation.platform.notification.service.NotificationService;
+import com.accommodation.platform.rent.service.RentService;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ public class BookingModificationService {
     private final BookingService bookingService;
     private final BookingStatusHistoryRepository historyRepository;
     private final NotificationService notificationService;
+    private final RentService rentService;
 
     public BookingModificationService(
             BookingRepository bookingRepository,
@@ -48,7 +50,8 @@ public class BookingModificationService {
             PricingCalculationService pricingService,
             BookingService bookingService,
             BookingStatusHistoryRepository historyRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            RentService rentService
     ) {
         this.bookingRepository = bookingRepository;
         this.bedRepository = bedRepository;
@@ -58,6 +61,7 @@ public class BookingModificationService {
         this.bookingService = bookingService;
         this.historyRepository = historyRepository;
         this.notificationService = notificationService;
+        this.rentService = rentService;
     }
 
     @Transactional
@@ -94,6 +98,7 @@ public class BookingModificationService {
         booking.setExtraCharges(newBreakdown.extraCharges());
         booking.setTotalAmount(newBreakdown.totalAmount());
         booking = bookingRepository.save(booking);
+        rentService.syncScheduleForExtension(booking);
 
         historyRepository.save(new BookingStatusHistory(
                 booking.getId(), booking.getBookingStatus(), booking.getBookingStatus(), userId,
@@ -153,6 +158,7 @@ public class BookingModificationService {
         booking.setExtraCharges(newBreakdown.extraCharges());
         booking.setTotalAmount(newBreakdown.totalAmount());
         booking = bookingRepository.save(booking);
+        rentService.syncScheduleForExtension(booking);
 
         historyRepository.save(new BookingStatusHistory(
                 booking.getId(), booking.getBookingStatus(), booking.getBookingStatus(), actorId,

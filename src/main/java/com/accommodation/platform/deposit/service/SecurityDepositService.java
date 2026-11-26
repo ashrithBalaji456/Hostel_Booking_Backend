@@ -78,6 +78,10 @@ public class SecurityDepositService {
         d.setDeductionReason(reason);
         d.setRefundedAmount(refunded);
         d.setStatus(ded.compareTo(BigDecimal.ZERO) > 0 ? "PARTIALLY_REFUNDED" : "REFUNDED");
+        if (refunded.compareTo(BigDecimal.ZERO) > 0) {
+            booking.setRefundAmount(booking.getRefundAmount().add(refunded));
+            bookingRepository.save(booking);
+        }
         return depositRepository.save(d);
     }
 

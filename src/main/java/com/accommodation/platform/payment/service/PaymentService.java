@@ -11,6 +11,8 @@ import com.accommodation.platform.notification.service.NotificationService;
 import com.accommodation.platform.payment.dto.PaymentDtos.*;
 import com.accommodation.platform.payment.entity.Payment;
 import com.accommodation.platform.payment.repository.PaymentRepository;
+import com.accommodation.platform.rent.service.RentService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class PaymentService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
     private final AppProperties appProperties;
+    private final RentService rentService;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -40,12 +43,26 @@ public class PaymentService {
             AuditLogService auditLogService,
             AppProperties appProperties
     ) {
+        this(paymentRepository, bookingRepository, gatewayList, notificationService, auditLogService, appProperties, null);
+    }
+
+    @Autowired
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            BookingRepository bookingRepository,
+            List<PaymentGateway> gatewayList,
+            NotificationService notificationService,
+            AuditLogService auditLogService,
+            AppProperties appProperties,
+            RentService rentService
+    ) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.gateways = gatewayList.stream().collect(Collectors.toMap(PaymentGateway::getProvider, Function.identity()));
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
         this.appProperties = appProperties;
+        this.rentService = rentService;
     }
 
     @Transactional
@@ -67,16 +84,23 @@ public class PaymentService {
         if (!booking.getUser().getId().equals(userId)) {
             throw new ForbiddenException("You can only pay for your own booking");
         }
-        if (booking.getBookingStatus() != BookingStatus.PENDING) {
-            throw new BadRequestException("Payment can only be initiated for pending bookings", "INVALID_BOOKING_STATE");
+        boolean isConfirmedBalanceDue = booking.getBookingStatus() == BookingStatus.CONFIRMED
+                && booking.getAmountPaid().compareTo(booking.getTotalAmount()) < 0;
+        if (booking.getBookingStatus() != BookingStatus.PENDING && !isConfirmedBalanceDue) {
+            throw new BadRequestException("Payment can only be initiated for pending bookings or confirmed bookings with balance due", "INVALID_BOOKING_STATE");
         }
-        if (booking.isApprovalRequired()) {
-            throw new BadRequestException("Booking is awaiting owner approval before payment", "OWNER_APPROVAL_REQUIRED");
+        if (booking.getBookingStatus() == BookingStatus.PENDING) {
+            if (booking.isApprovalRequired()) {
+                throw new BadRequestException("Booking is awaiting owner approval before payment", "OWNER_APPROVAL_REQUIRED");
+            }
+            if (booking.getExpiresAt() != null && booking.getExpiresAt().isBefore(Instant.now())) {
+                booking.setBookingStatus(BookingStatus.EXPIRED);
+                bookingRepository.save(booking);
+        if (rentService != null) {
+            rentService.syncScheduleWithBookingPayments(booking);
         }
-        if (booking.getExpiresAt() != null && booking.getExpiresAt().isBefore(Instant.now())) {
-            booking.setBookingStatus(BookingStatus.EXPIRED);
-            bookingRepository.save(booking);
-            throw new BadRequestException("Booking hold has expired", "BOOKING_EXPIRED");
+                throw new BadRequestException("Booking hold has expired", "BOOKING_EXPIRED");
+            }
         }
 
         BigDecimal remaining = booking.getTotalAmount().subtract(booking.getAmountPaid());
@@ -216,6 +240,9 @@ public class PaymentService {
 
         booking.setRefundAmount(booking.getRefundAmount().add(requestedRefund));
         bookingRepository.save(booking);
+        if (rentService != null) {
+            rentService.syncScheduleWithBookingPayments(booking);
+        }
 
         notificationService.notify(
                 booking.getUser(),
@@ -257,6 +284,9 @@ public class PaymentService {
             booking.setExpiresAt(null);
         }
         bookingRepository.save(booking);
+        if (rentService != null) {
+            rentService.syncScheduleWithBookingPayments(booking);
+        }
 
         notificationService.notify(
                 booking.getUser(),
