@@ -89,6 +89,9 @@ public class Property {
     @Column(name = "max_long_stay_months", nullable = false)
     private int maxLongStayMonths = 12;
 
+    @Column(name = "min_deposit_refund_months", nullable = false)
+    private int minDepositRefundMonths = 1;
+
     @Column(name = "emergency_booking_enabled", nullable = false)
     private boolean emergencyBookingEnabled = false;
 
@@ -174,6 +177,8 @@ public class Property {
     public void setMinLongStayDays(int minLongStayDays) { this.minLongStayDays = minLongStayDays; }
     public int getMaxLongStayMonths() { return maxLongStayMonths; }
     public void setMaxLongStayMonths(int maxLongStayMonths) { this.maxLongStayMonths = maxLongStayMonths; }
+    public int getMinDepositRefundMonths() { return minDepositRefundMonths; }
+    public void setMinDepositRefundMonths(int minDepositRefundMonths) { this.minDepositRefundMonths = minDepositRefundMonths; }
     public boolean isEmergencyBookingEnabled() { return emergencyBookingEnabled; }
     public void setEmergencyBookingEnabled(boolean emergencyBookingEnabled) { this.emergencyBookingEnabled = emergencyBookingEnabled; }
     public boolean isLateNightCheckInAllowed() { return lateNightCheckInAllowed; }

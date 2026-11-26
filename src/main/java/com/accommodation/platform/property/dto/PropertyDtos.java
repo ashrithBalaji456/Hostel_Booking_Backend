@@ -106,6 +106,9 @@ public final class PropertyDtos {
             @Min(1)
             Integer maxLongStayMonths,
 
+            @Min(0)
+            Integer minDepositRefundMonths,
+
             Set<String> amenityCodes,
 
             @NotNull(message = "Pricing configuration is required")
@@ -161,6 +164,7 @@ public final class PropertyDtos {
             Integer maxShortStayDays,
             Integer minLongStayDays,
             Integer maxLongStayMonths,
+            Integer minDepositRefundMonths,
             ListingStatus listingStatus,
             Set<String> amenityCodes,
             @Valid PricingRequest pricing,
@@ -215,6 +219,7 @@ public final class PropertyDtos {
             int maxShortStayDays,
             int minLongStayDays,
             int maxLongStayMonths,
+            int minDepositRefundMonths,
             String rejectionReason,
             Set<String> amenities,
             PricingResponse pricing,

@@ -94,6 +94,7 @@ public class PropertyService {
         if (req.maxShortStayDays() != null) property.setMaxShortStayDays(req.maxShortStayDays());
         if (req.minLongStayDays() != null) property.setMinLongStayDays(req.minLongStayDays());
         if (req.maxLongStayMonths() != null) property.setMaxLongStayMonths(req.maxLongStayMonths());
+        if (req.minDepositRefundMonths() != null) property.setMinDepositRefundMonths(req.minDepositRefundMonths());
 
         if (req.amenityCodes() != null && !req.amenityCodes().isEmpty()) {
             property.setAmenities(resolveOrCreateAmenities(req.amenityCodes()));
@@ -144,6 +145,7 @@ public class PropertyService {
         if (req.maxShortStayDays() != null) property.setMaxShortStayDays(req.maxShortStayDays());
         if (req.minLongStayDays() != null) property.setMinLongStayDays(req.minLongStayDays());
         if (req.maxLongStayMonths() != null) property.setMaxLongStayMonths(req.maxLongStayMonths());
+        if (req.minDepositRefundMonths() != null) property.setMinDepositRefundMonths(req.minDepositRefundMonths());
         if (req.listingStatus() != null && req.listingStatus() != ListingStatus.SUSPENDED) {
             property.setListingStatus(req.listingStatus());
         }
@@ -288,6 +290,7 @@ public class PropertyService {
                 property.getMaxShortStayDays(),
                 property.getMinLongStayDays(),
                 property.getMaxLongStayMonths(),
+                property.getMinDepositRefundMonths(),
                 property.getRejectionReason(),
                 amenityCodes,
                 pricingRes,

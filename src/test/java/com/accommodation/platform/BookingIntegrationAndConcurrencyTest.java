@@ -90,7 +90,7 @@ class BookingIntegrationAndConcurrencyTest {
                 "Metro Boys Hostel", "Near IT Park", PropertyType.HOSTEL,
                 "12 MG Road", "Indiranagar", "Bengaluru", "Karnataka", "560038",
                 12.9716, 77.5946, GenderPolicy.MALE_ONLY, null, null, true,
-                3, 14, 7, 12, Set.of("WIFI"),
+                3, 14, 7, 12, 1, Set.of("WIFI"),
                 new PricingRequest(new BigDecimal("100"), new BigDecimal("500"), new BigDecimal("3000"),
                         new BigDecimal("9000"), new BigDecimal("2000"), BigDecimal.ZERO, BigDecimal.ZERO),
                 List.of()
