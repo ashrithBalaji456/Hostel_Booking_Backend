@@ -43,7 +43,7 @@ public final class PropertyDtos {
 
     public record ImageRequest(
             @NotBlank(message = "Image URL is required")
-            @Size(max = 500)
+            @Size(max = 5000000)
             String imageUrl,
 
             @NotNull(message = "Image type is required")

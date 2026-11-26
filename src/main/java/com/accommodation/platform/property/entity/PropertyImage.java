@@ -17,7 +17,7 @@ public class PropertyImage {
     @JoinColumn(name = "property_id", nullable = false)
     private Property property;
 
-    @Column(name = "image_url", nullable = false, length = 500)
+    @Column(name = "image_url", nullable = false, columnDefinition = "TEXT")
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
