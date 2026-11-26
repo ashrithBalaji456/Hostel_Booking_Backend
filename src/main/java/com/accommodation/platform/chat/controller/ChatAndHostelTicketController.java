@@ -88,6 +88,15 @@ public class ChatAndHostelTicketController {
                 ));
     }
 
+    @GetMapping("/hostel-tickets/eligible-properties")
+    @Operation(summary = "List properties where current customer has an active stay")
+    public ResponseEntity<ApiResponse<List<EligibleTicketPropertyResponse>>> eligibleTicketProperties() {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Eligible properties fetched",
+                service.getEligiblePropertiesForTickets(SecurityUtils.getCurrentUserId())
+        ));
+    }
+
     @GetMapping("/hostel-tickets/my")
     @Operation(summary = "List hostel tickets raised by current customer")
     public ResponseEntity<ApiResponse<List<HostelTicketResponse>>> myHostelTickets() {

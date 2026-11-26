@@ -154,6 +154,12 @@ public class ChatAndHostelTicketService {
         Property property = propertyRepo.findById(req.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property not found", "PROPERTY_NOT_FOUND"));
 
+        if (!hasActiveResidentStay(customerId, property.getId())) {
+            throw new ForbiddenException(
+                    "Only active residents currently staying at this property can raise a hostel ticket"
+            );
+        }
+
         HostelTicket ticket = new HostelTicket();
         ticket.setTicketReference("HTK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         ticket.setPropertyId(property.getId());
@@ -178,6 +184,39 @@ public class ChatAndHostelTicketService {
                 NotificationType.HOSTEL_TICKET
         );
         return toTicketResponse(ticket, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EligibleTicketPropertyResponse> getEligiblePropertiesForTickets(UUID customerId) {
+        Instant now = Instant.now();
+        return bookingRepo.findByUserIdOrderByCreatedAtDesc(customerId, PageRequest.of(0, 50))
+                .getContent()
+                .stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.CONFIRMED && b.getCheckOut().isAfter(now))
+                .collect(java.util.stream.Collectors.toMap(
+                        b -> b.getProperty().getId(),
+                        b -> new EligibleTicketPropertyResponse(
+                                b.getProperty().getId(),
+                                b.getProperty().getName(),
+                                b.getProperty().getCity(),
+                                b.getBed().getRoom().getRoomNumber(),
+                                b.getBed().getBedNumber()
+                        ),
+                        (first, second) -> first
+                ))
+                .values()
+                .stream()
+                .toList();
+    }
+
+    private boolean hasActiveResidentStay(UUID customerId, UUID propertyId) {
+        Instant now = Instant.now();
+        return bookingRepo.findByUserIdOrderByCreatedAtDesc(customerId, PageRequest.of(0, 50))
+                .getContent()
+                .stream()
+                .anyMatch(b -> b.getProperty().getId().equals(propertyId)
+                        && b.getBookingStatus() == BookingStatus.CONFIRMED
+                        && b.getCheckOut().isAfter(now));
     }
 
     @Transactional(readOnly = true)
@@ -368,5 +407,13 @@ public class ChatAndHostelTicketService {
             long open,
             long inProgress,
             long resolvedOrClosed
+    ) {}
+
+    public record EligibleTicketPropertyResponse(
+            UUID propertyId,
+            String propertyName,
+            String city,
+            String roomNumber,
+            String bedNumber
     ) {}
 }
